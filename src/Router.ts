@@ -14,7 +14,7 @@ const default404 = html`404`;
  */
 export default class Router{
     protected readonly routes:routeType={};
-    protected readonly route404:ArrowTemplate;
+    protected readonly route404:((variables:{[variableName:string]:string})=>ArrowTemplate);
     protected readonly transformBeforeFetch;
 
     /**
@@ -22,7 +22,8 @@ export default class Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's fetched (either in {@link getPath} or {@link getPathNo404}
      */
-    constructor(route404:ArrowTemplate=default404, transformBeforeFetch?:(template:ArrowTemplate, vars:{[variableName:string]:string})=>ArrowTemplate) {
+    constructor(route404:((variables:{[variableName:string]:string})=>ArrowTemplate)=()=>default404,
+                transformBeforeFetch?:(template:ArrowTemplate, vars:{[variableName:string]:string})=>ArrowTemplate) {
         this.route404 = route404;
         this.transformBeforeFetch = transformBeforeFetch || (template => template);
     }
@@ -70,7 +71,12 @@ export default class Router{
      * @param location The location to fetch
      */
     getPath(location:string) {
-        return this.getPathNo404(location) || this.route404;
+        const vars = {};
+        const pathOptions = this.getPathInternal(this.routes, location.split("/"), vars);
+
+        if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined)
+            return this.transformBeforeFetch(this.route404(vars), vars);
+        return this.transformBeforeFetch(pathOptions[0]!, vars);
     }
     /**
      * Gets the template to render from the given location. Will return undefined if no path found
@@ -146,7 +152,7 @@ export class PageAttachedRouter extends Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's {@link rerender}ed
      */
-    constructor(attachTo:HTMLElement|undefined, route404?:ArrowTemplate,
+    constructor(attachTo:HTMLElement|undefined, route404?:((variables:{[variableName:string]:string})=>ArrowTemplate),
                 transformBeforeFetch?:(template:ArrowTemplate, vars:{[variableName:string]:string})=>ArrowTemplate) {
         super(route404, transformBeforeFetch);
         this.rootElement = attachTo;
