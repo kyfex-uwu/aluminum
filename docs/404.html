@@ -68,7 +68,7 @@
 
         if(window.location.pathname.endsWith("404.html")) window.location = window.location.href.split("/").slice(0,-1).join("/");
 
-        const parentRouter = new PageAttachedRouter(document.getElementById("root"), html`no page :3`);
+        const parentRouter = new PageAttachedRouter(document.getElementById("root"), ()=>html`no page :3`);
 
         const codeGenerator = createGenerator("span", {"class":"code"});
         const multilineCodeGenerator = codeGenerator.extend({"class":(prev)=>prev+" multiline"}, (superT)=>superT, "div")
@@ -93,7 +93,7 @@
             ${parentRouter.link.create("/foxprint/router")`Router`}<br>
         </div></div>`;
 
-        const router = new Router(html`404 - docs coming soon`, (template)=>{
+        const router = new Router(()=>html`404 - docs coming soon`, (template)=>{
             return html`<div style="display:grid; grid-template-columns: 1fr 50vw 1fr;">${sidebar}<main>
             <div style="display:flex">
                 <img src="https://kyfex-uwu.github.io/foxprint/arrowjs_aluminum_min.webp" style="height: 4em; display: inline-block;">
