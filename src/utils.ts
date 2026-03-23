@@ -1,4 +1,4 @@
-import {reactive} from "@arrow-js/core";
+import {reactive, watch} from "@arrow-js/core";
 
 /**
  * Creates a simple watchable value. You can access the value with `.value`\
@@ -8,6 +8,15 @@ import {reactive} from "@arrow-js/core";
 export function ref<T>(defaultValue:T){
     return new Ref(defaultValue);
 }
+/**
+ * Creates a simple computed value. You can access the value with `.value`\
+ * Shortcut for `new Computed(...)`
+ * @param expression the expression behind the computed's value
+ */
+export function computed<T>(expression:()=>T){
+    return new Computed(expression);
+}
+
 /**
  * A simple watchable value. You can access the value with `.value`
  * @param defaultValue the default value
@@ -34,33 +43,35 @@ export class Ref<T>{
      * @param callback - The callback to stop calling when the property changes
      */
     $off(callback: (value: T, oldValue: T) => void){
-        this.internalReactive.$on("value", callback);
+        this.internalReactive.$off("value", callback);
     }
 }
 
 //--
 
-// export class Computed<T>{
-//     protected readonly internal;
-//     constructor(defaultValue:()=>T) {
-//         this.internal = defaultValue;
-//     }
-//     get value():T{ return this.internal(); }
-//
-//     /**
-//      * Adds an observer to a given property
-//      * @param property - The property to watch
-//      * @param callback - The callback to call when the property changes
-//      */
-//     $on(callback: (value: T, oldValue: T) => void){
-//         this.internalReactive.$on("value", callback);
-//     }
-//     /**
-//      * Removes an observer from a given property
-//      * @param property - The property to stop watching
-//      * @param callback - The callback to stop calling when the property changes
-//      */
-//     $off(callback: (value: T, oldValue: T) => void){
-//         this.internalReactive.$on("value", callback);
-//     }
-// }
+export class Computed<T>{
+    protected readonly internal;
+    constructor(defaultValue:()=>T) {
+        this.internal = ref(undefined as T);
+
+        watch(defaultValue, newVal => this.internal.value = newVal)
+    }
+    get value():T{ return this.internal.value; }
+
+    /**
+     * Adds an observer to a given property
+     * @param property - The property to watch
+     * @param callback - The callback to call when the property changes
+     */
+    $on(callback: (value: T, oldValue: T) => void){
+        this.internal.$on(callback);
+    }
+    /**
+     * Removes an observer from a given property
+     * @param property - The property to stop watching
+     * @param callback - The callback to stop calling when the property changes
+     */
+    $off(callback: (value: T, oldValue: T) => void){
+        this.internal.$off(callback);
+    }
+}
