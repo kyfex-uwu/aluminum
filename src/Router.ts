@@ -4,7 +4,8 @@ import createGenerator from "./ArrowElementGenerator.js";
 
 const getRouteSymbol = Symbol("getRoute");
 const routerSymbol = Symbol("router");
-type getRoute = (variables:{[variableName:string]:string})=>ArrowTemplate;
+type TemplateOrPromise = ArrowTemplate|Promise<ArrowTemplate>
+type getRoute = (variables:{[variableName:string]:string})=>TemplateOrPromise;
 type routeType = {[subPath:string]:routeType, [getRouteOrRouter:symbol]:getRoute|Router};
 
 const default404 = html`404`;
@@ -14,7 +15,7 @@ const default404 = html`404`;
  */
 export default class Router{
     protected readonly routes:routeType={};
-    protected readonly route404:((variables:{[variableName:string]:string})=>ArrowTemplate);
+    protected readonly route404:((variables:{[variableName:string]:string})=>TemplateOrPromise);
     protected readonly transformBeforeFetch;
 
     /**
@@ -22,8 +23,8 @@ export default class Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's fetched (either in {@link getPath} or {@link getPathNo404}
      */
-    constructor(route404:((variables:{[variableName:string]:string})=>ArrowTemplate)=()=>default404,
-                transformBeforeFetch?:(template:ArrowTemplate, vars:{[variableName:string]:string})=>ArrowTemplate) {
+    constructor(route404:((variables:{[variableName:string]:string})=>TemplateOrPromise)=()=>default404,
+                transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string})=>TemplateOrPromise) {
         this.route404 = route404;
         this.transformBeforeFetch = transformBeforeFetch || (template => template);
     }
@@ -42,7 +43,7 @@ export default class Router{
      * or end (unless you know what you're doing)
      * @param renderTemplate The template to render at this location
      */
-    addRoute(path:string, renderTemplate:((variables:{[variableName:string]:string})=>ArrowTemplate)|Router){
+    addRoute(path:string, renderTemplate:((variables:{[variableName:string]:string})=>TemplateOrPromise)|Router){
         const subPaths = path.split("/");
 
         let position = this.routes;
@@ -99,7 +100,7 @@ export default class Router{
      */
     accessRoutes(){ return this.routes; }
 
-    private getPathInternal(routes:routeType, subPaths:string[], variables:{[k:string]:string}):ArrowTemplate[]|undefined {
+    private getPathInternal(routes:routeType, subPaths:string[], variables:{[k:string]:string}):TemplateOrPromise[]|undefined {
         if (subPaths.length === 0 && routes[getRouteSymbol] !== undefined)
             return [(routes[getRouteSymbol] as getRoute)(variables)];
 
@@ -115,7 +116,7 @@ export default class Router{
         }
 
         //variable path
-        const toReturn:ArrowTemplate[] = [];
+        const toReturn:TemplateOrPromise[] = [];
         for (const key in routes) {
             if (!key.startsWith(":") || routes[key] === undefined) continue;
 
@@ -152,8 +153,8 @@ export class PageAttachedRouter extends Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's {@link rerender}ed
      */
-    constructor(attachTo:HTMLElement|undefined, route404?:((variables:{[variableName:string]:string})=>ArrowTemplate),
-                transformBeforeFetch?:(template:ArrowTemplate, vars:{[variableName:string]:string})=>ArrowTemplate) {
+    constructor(attachTo:HTMLElement|undefined, route404?:((variables:{[variableName:string]:string})=>TemplateOrPromise),
+                transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string})=>TemplateOrPromise) {
         super(route404, transformBeforeFetch);
         this.rootElement = attachTo;
 
@@ -168,11 +169,14 @@ export class PageAttachedRouter extends Router{
      * Rerenders the page
      * @return this for chaining
      */
-    public rerender(){
+    public async rerender(){
         const path = this.getPath(this.location.value.join("/"));
         if(this.rootElement !== undefined) {
             this.rootElement.replaceChildren();
-            path(this.rootElement);
+            if(path instanceof Promise)
+                (await path)(this.rootElement);
+            else
+                path(this.rootElement);
         }
         return this;
     }

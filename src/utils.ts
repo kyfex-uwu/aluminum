@@ -40,3 +40,27 @@ export class Ref<T>{
 
 //--
 
+// export class Computed<T>{
+//     protected readonly internal;
+//     constructor(defaultValue:()=>T) {
+//         this.internal = defaultValue;
+//     }
+//     get value():T{ return this.internal(); }
+//
+//     /**
+//      * Adds an observer to a given property
+//      * @param property - The property to watch
+//      * @param callback - The callback to call when the property changes
+//      */
+//     $on(callback: (value: T, oldValue: T) => void){
+//         this.internalReactive.$on("value", callback);
+//     }
+//     /**
+//      * Removes an observer from a given property
+//      * @param property - The property to stop watching
+//      * @param callback - The callback to stop calling when the property changes
+//      */
+//     $off(callback: (value: T, oldValue: T) => void){
+//         this.internalReactive.$on("value", callback);
+//     }
+// }
