@@ -205,11 +205,11 @@ export class PageAttachedRouter extends Router{
      * An ArrowTemplateGenerator that creates links that work with this router
      */
     public readonly link = createGenerator<string>("a", {href:"#"},
-        {createTransform:(href, attrs)=> {
+        (href, attrs)=> {
             attrs["@click"] = (e:Event) => {
                 e.preventDefault();
                 this.redirect(href);
             };
             attrs.href = href;
-        }});
+        });
 }
