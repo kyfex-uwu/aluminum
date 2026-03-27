@@ -81,7 +81,7 @@ const defaultGenerator = new ArrowElementGenerator("",{}, ()=>{});
  * @return A new {@link ArrowElementGenerator} with the specified attributes, type, and transform function
  */
 export default function createGenerator<T>(type:string, attributes:Attributes={},
-        createTransform: (oldArgs:T, odlAttrs:Attributes)=>void = ()=>{}){
+        createTransform: (args:T, attrs:Attributes)=>void = ()=>{}){
     return defaultGenerator.extend(Object.fromEntries(Object.entries(attributes).map(
         ([k, v]) => [k, ()=>v])),
         ()=>createTransform, type);
