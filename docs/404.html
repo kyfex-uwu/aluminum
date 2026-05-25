@@ -157,7 +157,7 @@
             .addRoute("ref", ()=>html`
                 <p>
                     The ${code("ref")} function provides an easy way to create a reactive value. To create a reactive
-                    value, call ${code("const yourRef = ref(yourValue")}. To access your reactive value, access
+                    value, call ${code("const yourRef = ref(yourValue)")}. To access your reactive value, access
                     ${code("yourRef.value")}.
                 </p>
                 <p>
@@ -172,7 +172,7 @@
             .addRoute("computed", ()=>html`
                 <p>
                     The ${code("computed")} function provides an easy way to create a computed value. To create a computed
-                    value, call ${code("const yourComp = computed(() => yourExpression")}. To access your computed value, access
+                    value, call ${code("const yourComp = computed(() => yourExpression)")}. To access your computed value, access
                     ${code("yourComp.value")}. ${code("yourComp")} will update whenever ${code("() => yourExpression")}
                     evaluates to a new value.
                 </p>
@@ -198,7 +198,7 @@
             </p>
             <p>
                 To use the ${code("PageAttachedRouter")}, create your router, add your routes, and then call
-                ${code(".rerender()")}.
+                ${code(".redirect()")}.
             </p>
             <p>
                 The ${code("rerender")} function is very simple; it only rerenders the current page.
