@@ -6,7 +6,7 @@ const getRouteSymbol = Symbol("getRoute");
 const routerSymbol = Symbol("router");
 type TemplateOrPromise = ArrowTemplate|Promise<ArrowTemplate>
 type stateType = {
-    [variableName:string]:string,
+    [variableName:string]:any,
     path:string,
     readonly originalPath:string
 };
@@ -177,6 +177,9 @@ export class PageAttachedRouter extends Router{
             this.redirect(window.location.pathname);
             e.preventDefault();
         });//back button handling
+
+        //@ts-expect-error
+        this.link.create=this.link;
     }
 
     /**
