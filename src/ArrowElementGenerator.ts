@@ -12,6 +12,9 @@ function extendAttributes(originalAttrs:Attributes,transformers:Attributes<(prev
 
 /**
  * A generator for extendable templates that can be rendered. In other frameworks, this would be a "component generator"
+ * @deprecated 2.3.3
+ *
+ * just create a function that returns an html snippet instead :3
  */
 export class ArrowElementGenerator<T> {
     public readonly type;
@@ -79,6 +82,9 @@ const defaultGenerator = new ArrowElementGenerator("",{}, ()=>{});
  * @param attributes The attributes to add to all templates made by this generator
  * @param createTransform A function that gets run when {@link create} is called. See {@link create} for more info
  * @return A new {@link ArrowElementGenerator} with the specified attributes, type, and transform function
+ * @deprecated 2.3.3
+ *
+ * just create a function that returns an html snippet instead :3
  */
 export default function createGenerator<T>(type:string, attributes:Attributes={},
         createTransform: (args:T, attrs:Attributes)=>void = ()=>{}){

@@ -1,5 +1,5 @@
 import {type ArrowTemplate, html} from "@arrow-js/core";
-import {ref} from "./utils.js";
+import {htmlAcceptor, ref} from "./utils.js";
 import createGenerator from "./ArrowElementGenerator.js";
 
 const getRouteSymbol = Symbol("getRoute");
@@ -10,8 +10,8 @@ type stateType = {
     path:string,
     readonly originalPath:string
 };
-type getRoute = (variables:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise;
-type routeType = {[subPath:string]:routeType, [getRouteOrRouter:symbol]:getRoute|Router};
+type Route = (variables:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise;
+type routeType = {[subPath:string]:routeType, [getRouteOrRouter:symbol]:Route|Router};
 
 const default404 = html`404`;
 
@@ -20,7 +20,7 @@ const default404 = html`404`;
  */
 export default class Router{
     protected readonly routes:routeType={};
-    protected readonly route404:getRoute;
+    protected readonly route404:Route;
     protected readonly transformBeforeFetch;
 
     /**
@@ -28,7 +28,7 @@ export default class Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's fetched (either in {@link getPath} or {@link getPathNo404}
      */
-    constructor(route404:getRoute=()=>default404,
+    constructor(route404:Route=()=>default404,
                 transformBeforeFetch?:(template:TemplateOrPromise,
                 vars:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise) {
         this.route404 = route404;
@@ -49,7 +49,7 @@ export default class Router{
      * or end (unless you know what you're doing)
      * @param renderTemplate The template to render at this location
      */
-    addRoute(path:string, renderTemplate:getRoute|Router){
+    addRoute(path:string, renderTemplate:Route|Router){
         const subPaths = path.split("/");
 
         let position = this.routes;
@@ -116,7 +116,7 @@ export default class Router{
     private getPathInternal(routes:routeType, subPaths:string[],
                             variables:{[k:string]:string}, state:stateType):TemplateOrPromise[]|undefined {
         if (subPaths.length === 0 && routes[getRouteSymbol] !== undefined)
-            return [(routes[getRouteSymbol] as getRoute)(variables, state)];
+            return [(routes[getRouteSymbol] as Route)(variables, state)];
 
         //regular path
         if (routes[subPaths[0]!] !== undefined) {
@@ -167,7 +167,7 @@ export class PageAttachedRouter extends Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's {@link rerender}ed
      */
-    constructor(attachTo:HTMLElement|undefined, route404?:getRoute,
+    constructor(attachTo:HTMLElement|undefined, route404?:Route,
                 transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise) {
         super(route404, transformBeforeFetch);
         this.rootElement = attachTo;
@@ -216,14 +216,18 @@ export class PageAttachedRouter extends Router{
     }
 
     /**
-     * An ArrowTemplateGenerator that creates links that work with this router
+     * Creates a premade template for links that work with this router
+     *
+     * How to use:
+     * ```ts
+     * router.routerLink("example.com")`Link Label` // -> html`<a href="example.com">Link Label</a>`
+     * ```
+     * @param href the location to link to
      */
-    public readonly link = createGenerator<string>("a", {href:"#"},
-        (href, attrs)=> {
-            attrs["@click"] = (e:Event) => {
-                e.preventDefault();
-                this.redirect(href);
-            };
-            attrs.href = href;
-        });
+    public link(href:string){
+        return htmlAcceptor(insides=>html`<a href="${href}" @click="${(e:Event)=>{
+            e.preventDefault();
+            this.redirect(href);
+        }}">${insides}</a>`);
+    }
 }

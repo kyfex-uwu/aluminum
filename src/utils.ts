@@ -1,4 +1,4 @@
-import {reactive, watch} from "@arrow-js/core";
+import {type ArrowTemplate, html, reactive, watch} from "@arrow-js/core";
 
 /**
  * Creates a simple watchable value. You can access the value with `.value`\
@@ -69,5 +69,28 @@ export class Computed<T>{
      */
     $off(callback: (value: T, oldValue: T) => void){
         this.internal.$off(callback);
+    }
+}
+
+type PseudoTemplate<T> = (strings:TemplateStringsArray, ...expSlots: any[]) => T
+/**
+ * Returns a premade html template that triggers a callback when used.
+ *
+ * EX:
+ * ```ts
+ * function linkCreator(href:string){
+ *   return htmlAcceptor( (linkText:any) =>
+ *     html`<a href=${href}>${linkText}</a>`);
+ * }
+ *
+ * linkCreator("example.com")`Example link`
+ * // ^ produces this v
+ * html`<a href="example.com">Example link</a>`
+ * ```
+ * @param callback a function that accepts an html template and transforms it
+ */
+export function htmlAcceptor<T>(callback:((html:ArrowTemplate)=>T)):PseudoTemplate<T>{
+    return (strings:TemplateStringsArray, ...expSlots: any[])=>{
+        return callback(html(strings, ...expSlots));
     }
 }
