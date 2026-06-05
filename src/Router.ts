@@ -99,8 +99,8 @@ export default class Router{
         if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined)
             return {state, vars};
         return {
-            state, vars,
-            path: this.transformBeforeFetch(pathOptions[0]!, vars, state)
+            state:pathOptions[0]!.state, vars,
+            path: this.transformBeforeFetch(pathOptions[0]!.path, vars, state)
         }
     }
 
@@ -114,23 +114,28 @@ export default class Router{
     accessRoutes(){ return this.routes; }
 
     private getPathInternal(routes:routeType, subPaths:string[],
-                            variables:{[k:string]:string}, state:stateType):TemplateOrPromise[]|undefined {
+                            variables:{[k:string]:string}, state:stateType):{path:TemplateOrPromise,state:stateType}[]|undefined {
+        //final destination
         if (subPaths.length === 0 && routes[getRouteSymbol] !== undefined)
-            return [(routes[getRouteSymbol] as Route)(variables, state)];
+            return [{
+                path:(routes[getRouteSymbol] as Route)(variables, state),
+                state
+            }];
 
-        //regular path
-        if (routes[subPaths[0]!] !== undefined) {
-            if(routes[subPaths[0]!] !== undefined) {
-                const next = routes[subPaths[0]!]!;
-                if(next[routerSymbol] instanceof Router && subPaths.length>1){
-                    return (next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1), {...variables}, {...state}) ?? [])
-                        .map(template => (next[routerSymbol] as Router).transformBeforeFetch(template, {...variables}, {...state}));
-                }else return this.getPathInternal(next, subPaths.slice(1), {...variables}, {...state});
-            }
+        //get next section
+        if((subPaths[0]===undefined || !subPaths[0]!.startsWith(":")) && routes[subPaths[0]!] !== undefined) {
+            const next = routes[subPaths[0]!]!;
+            if(next[routerSymbol] instanceof Router && subPaths.length>1){
+                return (next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1), {...variables}, state) ?? [])
+                    .map(template => {return{
+                        path:(next[routerSymbol] as Router).transformBeforeFetch(template.path, {...variables}, state),
+                        state
+                    }});
+            }else return this.getPathInternal(next, subPaths.slice(1), {...variables}, state);
         }
 
         //variable path
-        const toReturn:TemplateOrPromise[] = [];
+        const toReturn:{path:TemplateOrPromise,state:stateType}[] = [];
         for (const key in routes) {
             if (!key.startsWith(":") || routes[key] === undefined) continue;
 
@@ -138,10 +143,14 @@ export default class Router{
                 (routes[key][routerSymbol].getPathInternal(routes[key][routerSymbol].accessRoutes(), subPaths.slice(1), {
                     ...variables,
                     [key.slice(1)]:subPaths[0]!
-            }, {...state}) ?? []).map(template => (routes[key]![routerSymbol] as Router).transformBeforeFetch(template, {
-                ...variables,
-                    [key.slice(1)]:subPaths[0]!
-                }, {...state}) ) :
+            }, {...state}) ?? []).map(template => {return{
+                    path:(routes[key]![routerSymbol] as Router)
+                        .transformBeforeFetch(template.path, {
+                            ...variables,
+                                [key.slice(1)]:subPaths[0]!
+                            }, {...state}),
+                    state:{...state}
+                }} ) :
                 this.getPathInternal(routes[key], subPaths.slice(1), {
                     ...variables,
                     [key.slice(1)]:subPaths[0]!
