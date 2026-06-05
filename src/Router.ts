@@ -5,7 +5,12 @@ import createGenerator from "./ArrowElementGenerator.js";
 const getRouteSymbol = Symbol("getRoute");
 const routerSymbol = Symbol("router");
 type TemplateOrPromise = ArrowTemplate|Promise<ArrowTemplate>
-type getRoute = (variables:{[variableName:string]:string})=>TemplateOrPromise;
+type stateType = {
+    [variableName:string]:string,
+    path:string,
+    readonly originalPath:string
+};
+type getRoute = (variables:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise;
 type routeType = {[subPath:string]:routeType, [getRouteOrRouter:symbol]:getRoute|Router};
 
 const default404 = html`404`;
@@ -15,7 +20,7 @@ const default404 = html`404`;
  */
 export default class Router{
     protected readonly routes:routeType={};
-    protected readonly route404:((variables:{[variableName:string]:string})=>TemplateOrPromise);
+    protected readonly route404:getRoute;
     protected readonly transformBeforeFetch;
 
     /**
@@ -23,8 +28,9 @@ export default class Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's fetched (either in {@link getPath} or {@link getPathNo404}
      */
-    constructor(route404:((variables:{[variableName:string]:string})=>TemplateOrPromise)=()=>default404,
-                transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string})=>TemplateOrPromise) {
+    constructor(route404:getRoute=()=>default404,
+                transformBeforeFetch?:(template:TemplateOrPromise,
+                vars:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise) {
         this.route404 = route404;
         this.transformBeforeFetch = transformBeforeFetch || (template => template);
     }
@@ -43,7 +49,7 @@ export default class Router{
      * or end (unless you know what you're doing)
      * @param renderTemplate The template to render at this location
      */
-    addRoute(path:string, renderTemplate:((variables:{[variableName:string]:string})=>TemplateOrPromise)|Router){
+    addRoute(path:string, renderTemplate:getRoute|Router){
         const subPaths = path.split("/");
 
         let position = this.routes;
@@ -72,23 +78,30 @@ export default class Router{
      * @param location The location to fetch
      */
     getPath(location:string) {
-        const vars = {};
-        const pathOptions = this.getPathInternal(this.routes, location.split("/"), vars);
-
-        if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined)
-            return this.transformBeforeFetch(this.route404(vars), vars);
-        return this.transformBeforeFetch(pathOptions[0]!, vars);
+        const data = this.getPathBase(location);
+        return data.path ?? this.transformBeforeFetch(this.route404(data.vars, data.state), data.vars, data.state);
     }
     /**
      * Gets the template to render from the given location. Will return undefined if no path found
      * @param location The location to fetch
      */
     getPathNo404(location:string){
+        return this.getPathBase(location).path;
+    }
+    private getPathBase(location:string){
         const vars = {};
-        const pathOptions = this.getPathInternal(this.routes, location.split("/"), vars);
+        const state:stateType = {
+            get originalPath(){ return location; },
+            path:location
+        };
+        const pathOptions = this.getPathInternal(this.routes, location.split("/"), vars, state);
 
-        if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined) return undefined;
-        return this.transformBeforeFetch(pathOptions[0]!, vars);
+        if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined)
+            return {state, vars};
+        return {
+            state, vars,
+            path: this.transformBeforeFetch(pathOptions[0]!, vars, state)
+        }
     }
 
     /**
@@ -100,18 +113,19 @@ export default class Router{
      */
     accessRoutes(){ return this.routes; }
 
-    private getPathInternal(routes:routeType, subPaths:string[], variables:{[k:string]:string}):TemplateOrPromise[]|undefined {
+    private getPathInternal(routes:routeType, subPaths:string[],
+                            variables:{[k:string]:string}, state:stateType):TemplateOrPromise[]|undefined {
         if (subPaths.length === 0 && routes[getRouteSymbol] !== undefined)
-            return [(routes[getRouteSymbol] as getRoute)(variables)];
+            return [(routes[getRouteSymbol] as getRoute)(variables, state)];
 
         //regular path
         if (routes[subPaths[0]!] !== undefined) {
             if(routes[subPaths[0]!] !== undefined) {
                 const next = routes[subPaths[0]!]!;
                 if(next[routerSymbol] instanceof Router && subPaths.length>1){
-                    return (next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1), {...variables}) ?? [])
-                        .map(template => (next[routerSymbol] as Router).transformBeforeFetch(template, {...variables}));
-                }else return this.getPathInternal(next, subPaths.slice(1), {...variables});
+                    return (next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1), {...variables}, {...state}) ?? [])
+                        .map(template => (next[routerSymbol] as Router).transformBeforeFetch(template, {...variables}, {...state}));
+                }else return this.getPathInternal(next, subPaths.slice(1), {...variables}, {...state});
             }
         }
 
@@ -124,14 +138,14 @@ export default class Router{
                 (routes[key][routerSymbol].getPathInternal(routes[key][routerSymbol].accessRoutes(), subPaths.slice(1), {
                     ...variables,
                     [key.slice(1)]:subPaths[0]!
-            }) ?? []).map(template => (routes[key]![routerSymbol] as Router).transformBeforeFetch(template, {
+            }, {...state}) ?? []).map(template => (routes[key]![routerSymbol] as Router).transformBeforeFetch(template, {
                 ...variables,
                     [key.slice(1)]:subPaths[0]!
-                }) ) :
+                }, {...state}) ) :
                 this.getPathInternal(routes[key], subPaths.slice(1), {
                     ...variables,
                     [key.slice(1)]:subPaths[0]!
-                });
+                }, {...state});
             if(maybeRoute !== undefined) toReturn.push(...maybeRoute);
         }
 
@@ -153,8 +167,8 @@ export class PageAttachedRouter extends Router{
      * @param route404 The template to render if no other path was found. Defaults to "404" text
      * @param transformBeforeFetch An optional function that can transform the path before it's {@link rerender}ed
      */
-    constructor(attachTo:HTMLElement|undefined, route404?:((variables:{[variableName:string]:string})=>TemplateOrPromise),
-                transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string})=>TemplateOrPromise) {
+    constructor(attachTo:HTMLElement|undefined, route404?:getRoute,
+                transformBeforeFetch?:(template:TemplateOrPromise, vars:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise) {
         super(route404, transformBeforeFetch);
         this.rootElement = attachTo;
 
@@ -187,7 +201,7 @@ export class PageAttachedRouter extends Router{
      * @param replace Whether this new url should replace the current url in history or be a new entry
      * @return this for chaining
      */
-    redirect(newLocation:string=window.location.pathname, replace?:boolean){
+    redirect(newLocation:string=window.location.pathname+window.location.search+window.location.hash, replace?:boolean){
         hrefResolver.href=newLocation;
         const url = URL.parse(hrefResolver.href)!;
 

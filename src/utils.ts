@@ -30,17 +30,15 @@ export class Ref<T>{
     set value(value:T){ this.internalReactive.value = value as any; }
 
     /**
-     * Adds an observer to a given property
-     * @param property - The property to watch
-     * @param callback - The callback to call when the property changes
+     * Adds an observer
+     * @param callback - The observer to call when the value changes
      */
     $on(callback: (value: T, oldValue: T) => void){
         this.internalReactive.$on("value", callback);
     }
     /**
-     * Removes an observer from a given property
-     * @param property - The property to stop watching
-     * @param callback - The callback to stop calling when the property changes
+     * Removes an observer
+     * @param callback - The observer to stop calling
      */
     $off(callback: (value: T, oldValue: T) => void){
         this.internalReactive.$off("value", callback);
@@ -54,22 +52,20 @@ export class Computed<T>{
     constructor(defaultValue:()=>T) {
         this.internal = ref(undefined as T);
 
-        watch(defaultValue, newVal => this.internal.value = newVal)
+        watch(defaultValue, newVal => this.internal.value = newVal);
     }
     get value():T{ return this.internal.value; }
 
     /**
-     * Adds an observer to a given property
-     * @param property - The property to watch
-     * @param callback - The callback to call when the property changes
+     * Adds an observer
+     * @param callback - The observer to call when this value changes
      */
     $on(callback: (value: T, oldValue: T) => void){
         this.internal.$on(callback);
     }
     /**
-     * Removes an observer from a given property
-     * @param property - The property to stop watching
-     * @param callback - The callback to stop calling when the property changes
+     * Removes an observer
+     * @param callback - The observer to stop calling
      */
     $off(callback: (value: T, oldValue: T) => void){
         this.internal.$off(callback);

@@ -10,7 +10,7 @@
 <script type="importmap">
     {
         "imports":{
-            "@arrow-js/core": "https://esm.sh/@arrow-js/core"
+            "@arrow-js/core": "https://esm.sh/@arrow-js/core@1.0.0-alpha.10"
         }
     }
 </script>
@@ -37,8 +37,9 @@
     subRouter.addRoute("", (vars)=>html`subrouter says hi`);
     subRouter.addRoute(":var2", (vars)=>html`subrouter says: ${vars.var2}`);
 
-    const router = new PageAttachedRouter(document.getElementById("target"), undefined, (template)=>{
-        return html`<${template}>`;
+    const router = new PageAttachedRouter(document.getElementById("target"), undefined, (template, vars, state)=>{
+        if(state.path.includes("ae")) return template;
+        return html`<${template}>\n${state.path}`;
     });
     // router.addRoute(":test", (vars) => html`testing :3 ${vars.test} * ${vars.test2} * ${vars.test3} ${Math.random()}`);
     router.addRoute("owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value}`} ${
