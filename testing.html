@@ -33,10 +33,16 @@
 
     const hehe = ref(0);
 
+    const subRouter2 = new Router(undefined, (t, v)=>html`subrouter2: ${t}`);
+    subRouter2.addRoute(":a", (vars)=>html`subsub a ${JSON.stringify(vars)}`);
+    subRouter2.addRoute(":b", (vars)=>html`subsub b ${JSON.stringify(vars)}`);
+    subRouter2.addRoute(":c", (vars)=>html`subsub c ${JSON.stringify(vars)}`);
+
     const subRouter = new Router(undefined, (template, vars)=>html`[${template}]:${vars.subRouter}`);
     subRouter.addRoute("", (vars)=>html`subrouter says hi`);
     subRouter.addRoute(":var2", (vars)=>html`owo subrouter says: ${vars.var2}`);
     subRouter.addRoute(":var3/:var4", (vars)=>html`hmm: ${vars.var3} ${vars.var4}`);
+    subRouter.addRoute(":var5/:var6/sub", subRouter2);
 
     const router = new PageAttachedRouter(document.getElementById("target"), undefined, (template, vars, state)=>{
         if(state.path.includes("ae")) return template;

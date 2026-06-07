@@ -1,6 +1,5 @@
 import {type ArrowTemplate, html} from "@arrow-js/core";
 import {htmlAcceptor, ref} from "./utils.js";
-import createGenerator from "./ArrowElementGenerator.js";
 
 const getRouteSymbol = Symbol("getRoute");
 const routerSymbol = Symbol("router");
@@ -8,13 +7,14 @@ type TemplateOrPromise = ArrowTemplate|Promise<ArrowTemplate>
 type stateType = {
     [variableName:string]:any,
     path:string,
-    readonly originalPath:string
+    originalPath:string
 };
 type Route = (variables:{[variableName:string]:string}, state:stateType)=>TemplateOrPromise;
 type routeType = {[subPath:string]:routeType, [getRouteOrRouter:symbol]:Route|Router};
 
 const default404 = html`404`;
 
+type routeTree = [{ route:Route, var:Map<string, string> }]|[{ route:Router, var:Map<string, string> }, routeTree[]];
 /**
  * A basic router
  */
@@ -88,19 +88,42 @@ export default class Router{
     getPathNo404(location:string){
         return this.getPathBase(location).path;
     }
+    //
+    // private static collapsePath(tree:routeTree[]){
+    //     let toReturn:Router = [];
+    //     for(let i=0;i<tree.length;i++) {
+    //         const route= tree[i]!;
+    //         toReturn[i] = route.length === 2 ?
+    //             this.collapsePath(route[1]) :
+    //             route[0]
+    //     }
+    //
+    //     return toReturn;
+    // }
     private getPathBase(location:string){
-        const vars = {};
+        let pathOptions = this.getPathInternal(this.routes, location.split("/"))[0]!;
+        const routerPath:Router[] = [];
+        const vars:{[k:string]:string} = {};
+        while(pathOptions[0].route instanceof Router){
+            routerPath.unshift(pathOptions[0].route);
+            for(const entry of pathOptions[0].var)
+                vars[entry[0]]=entry[1];
+            pathOptions=pathOptions[1]![0]!;
+        }
+        for(const entry of pathOptions[0].var)
+            vars[entry[0]]=entry[1];
+
         const state:stateType = {
-            get originalPath(){ return location; },
+            originalPath:location,
             path:location
         };
-        const pathOptions = this.getPathInternal(this.routes, location.split("/"), vars, state);
+        let route = pathOptions[0].route(vars, state);
+        for(const router of routerPath)
+            route=router.transformBeforeFetch(route, vars, state);
 
-        if(pathOptions === undefined || pathOptions.length === 0 || pathOptions[0] === undefined)
-            return {state, vars};
         return {
-            state:pathOptions[0]!.state, vars,
-            path: this.transformBeforeFetch(pathOptions[0]!.path, vars, state)
+            state, vars,
+            path: this.transformBeforeFetch(route, vars, state)
         }
     }
 
@@ -113,52 +136,35 @@ export default class Router{
      */
     accessRoutes(){ return this.routes; }
 
-    private getPathInternal(routes:routeType, subPaths:string[],
-                            variables:{[k:string]:string}, state:stateType):{path:TemplateOrPromise,state:stateType}[]|undefined {
+    private getPathInternal(routes:routeType, subPaths:string[]):routeTree[] {
         //final destination
-        if (subPaths.length === 0 && routes[getRouteSymbol] !== undefined)
-            return [{
-                path:(routes[getRouteSymbol] as Route)(variables, state),
-                state
-            }];
+        if (subPaths.length === 0) {
+            return (routes[getRouteSymbol] !== undefined) ? [[{route:routes[getRouteSymbol] as Route, var:new Map() }]] : [];
+        }
 
         //get next section
-        if((subPaths[0]===undefined || !subPaths[0]!.startsWith(":")) && routes[subPaths[0]!] !== undefined) {
+        if(!subPaths[0]!.startsWith(":") && routes[subPaths[0]!] !== undefined) {
             const next = routes[subPaths[0]!]!;
-            if(next[routerSymbol] instanceof Router && subPaths.length>1){
-                return (next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1), {...variables}, state) ?? [])
-                    .map(template => {return{
-                        path:(next[routerSymbol] as Router).transformBeforeFetch(template.path, {...variables}, state),
-                        state
-                    }});
-            }else return this.getPathInternal(next, subPaths.slice(1), {...variables}, state);
+            return (next[routerSymbol] instanceof Router && subPaths.length>1) ?
+                [[{route:next[routerSymbol], var:new Map()}, next[routerSymbol].getPathInternal(next[routerSymbol].accessRoutes(), subPaths.slice(1))]] :
+                this.getPathInternal(next, subPaths.slice(1));
         }
 
         //variable path
-        const toReturn:{path:TemplateOrPromise,state:stateType}[] = [];
+        const toReturn:routeTree[] = [];
         for (const key in routes) {
             if (!key.startsWith(":") || routes[key] === undefined) continue;
-
             const maybeRoute = (routes[key][routerSymbol] instanceof Router && subPaths.length>1) ?
-                (routes[key][routerSymbol].getPathInternal(routes[key][routerSymbol].accessRoutes(), subPaths.slice(1), {
-                    ...variables,
-                    [key.slice(1)]:subPaths[0]!
-            }, {...state}) ?? []).map(template => {return{
-                    path:(routes[key]![routerSymbol] as Router)
-                        .transformBeforeFetch(template.path, {
-                            ...variables,
-                                [key.slice(1)]:subPaths[0]!
-                            }, {...state}),
-                    state:{...state}
-                }} ) :
-                this.getPathInternal(routes[key], subPaths.slice(1), {
-                    ...variables,
-                    [key.slice(1)]:subPaths[0]!
-                }, {...state});
-            if(maybeRoute !== undefined) toReturn.push(...maybeRoute);
+                [[{route:routes[key][routerSymbol], var:new Map()}, routes[key][routerSymbol].getPathInternal(
+                    routes[key][routerSymbol].accessRoutes(), subPaths.slice(1))] satisfies routeTree] :
+                this.getPathInternal(routes[key], subPaths.slice(1));
+
+            for(const route of maybeRoute)
+                route[0].var.set(key.slice(1), subPaths[0]!);
+            toReturn.push(...maybeRoute);
         }
 
-        if(toReturn.length>0) return toReturn;
+        return toReturn;
     }
 }
 
