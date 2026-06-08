@@ -100,8 +100,10 @@ export default class Router{
     //
     //     return toReturn;
     // }
-    private getPathBase(location:string){
-        let pathOptions = this.getPathInternal(this.routes, location.split("/"))[0]!;
+    private getPathBase(location:string):{state:{[k:string]:string}, vars:{[k:string]:string}, path?:TemplateOrPromise}{
+        let pathOptions = this.getPathInternal(this.routes, location.split("/"))[0];
+        if(pathOptions === undefined) return {state:{},vars:{}};
+
         const routerPath:Router[] = [];
         const vars:{[k:string]:string} = {};
         while(pathOptions[0].route instanceof Router){
@@ -189,7 +191,7 @@ export class PageAttachedRouter extends Router{
 
         this.location.$on(()=> this.rerender());
         window.addEventListener("popstate", e => {
-            this.redirect(window.location.pathname);
+            this.redirect(e.state.url);
             e.preventDefault();
         });//back button handling
 
