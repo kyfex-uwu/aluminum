@@ -100,9 +100,9 @@ export default class Router{
     //
     //     return toReturn;
     // }
-    private getPathBase(location:string):{state:{[k:string]:string}, vars:{[k:string]:string}, path?:TemplateOrPromise}{
+    private getPathBase(location:string):{state:stateType, vars:{[k:string]:string}, path?:TemplateOrPromise}{
         let pathOptions = this.getPathInternal(this.routes, location.split("/"))[0];
-        if(pathOptions === undefined) return {state:{},vars:{}};
+        if(pathOptions === undefined) return {state:{path:location,originalPath:location},vars:{}};
 
         const routerPath:Router[] = [];
         const vars:{[k:string]:string} = {};
@@ -191,8 +191,7 @@ export class PageAttachedRouter extends Router{
 
         this.location.$on(()=> this.rerender());
         window.addEventListener("popstate", e => {
-            this.redirect(window.location.href);
-            e.preventDefault();
+            this.redirect(window.location.href, 'back');
         });//back button handling
 
         //@ts-expect-error
@@ -218,10 +217,10 @@ export class PageAttachedRouter extends Router{
     /**
      * Updates the window's `location` and rerenders the page
      * @param newLocation The new url
-     * @param replace Whether this new url should replace the current url in history or be a new entry
+     * @param replace Whether this new url should replace the current url in history or be a new entry. (or if it should simulate a back button press)
      * @return this for chaining
      */
-    redirect(newLocation:string=window.location.pathname+window.location.search+window.location.hash, replace?:boolean){
+    redirect(newLocation:string=window.location.pathname+window.location.search+window.location.hash, replace?:boolean|'back'){
         hrefResolver.href=newLocation;
         const url = URL.parse(hrefResolver.href)!;
 
@@ -231,7 +230,8 @@ export class PageAttachedRouter extends Router{
         }
         this.location.value = url.pathname.split("/").slice(1);
 
-        window.history[replace ? "replaceState" : "pushState"](null, "", "/" + this.location.value.join("/")+url.search+url.hash);
+        if(replace !== 'back')
+            window.history[replace ? "replaceState" : "pushState"](null, "", "/" + this.location.value.join("/")+url.search+url.hash);
         return this;
     }
 
