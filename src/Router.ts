@@ -191,7 +191,7 @@ export class PageAttachedRouter extends Router{
 
         this.location.$on(()=> this.rerender());
         window.addEventListener("popstate", e => {
-            this.redirect(e.state.url);
+            this.redirect(window.location.href);
             e.preventDefault();
         });//back button handling
 
