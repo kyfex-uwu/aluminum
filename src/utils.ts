@@ -47,12 +47,16 @@ export class Ref<T>{
 
 //--
 
+/**
+ * A simple computed value. You can access the value with `.value`
+ * @param computer the function that is run to compute the value
+ */
 export class Computed<T>{
     protected readonly internal;
-    constructor(defaultValue:()=>T) {
+    constructor(computer:()=>T) {
         this.internal = ref(undefined as T);
 
-        watch(defaultValue, newVal => this.internal.value = newVal);
+        watch(computer, newVal => this.internal.value = newVal);
     }
     get value():T{ return this.internal.value; }
 
@@ -93,4 +97,26 @@ export function htmlAcceptor<T>(callback:((html:ArrowTemplate)=>T)):PseudoTempla
     return (strings:TemplateStringsArray, ...expSlots: any[])=>{
         return callback(html(strings, ...expSlots));
     }
+}
+
+/**
+ * Another way to create an element with more flexibility
+ *
+ * EX:
+ * ```ts
+ * element("div", { class: "className className2", id: "elementId" })`contents`
+ * // ^ produces this v
+ * <div class="className className2" id="elementId">contents</div>
+ * ```
+ *
+ * @param type The type of the element to return
+ * @param attributes An object of the form { <attributeName>: <attributeValue> }
+ */
+export function element(type:string, attributes:{[k:string]:any}){
+    const orderedContents = Object.entries(attributes);
+    return htmlAcceptor(insides=>html(
+        [`<${type} `+(orderedContents.length===0?"":orderedContents[0]![0]+'="'),
+            ...orderedContents.slice(1).map(data=>`" ${data[0]}="`),
+            (orderedContents.length>0?'"':"")+'>', `</${type}>`] as unknown as TemplateStringsArray,
+        ...[...orderedContents.map(data => data[1]), insides]));
 }

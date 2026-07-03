@@ -16,7 +16,7 @@
 </script>
 <script type="module">
     import createGenerator from "/dist/ArrowElementGenerator.js";
-    import {ref} from "/dist/utils.js";
+    import {ref, element} from "/dist/utils.js";
     import {html} from "@arrow-js/core"
     import Router, {PageAttachedRouter} from "/dist/Router.js";
 
@@ -52,7 +52,7 @@
         return html`<${template}>\n${state.path}`;
     });
     // router.addRoute(":test", (vars) => html`testing :3 ${vars.test} * ${vars.test2} * ${vars.test3} ${Math.random()}`);
-    router.addRoute("owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value}`} ${
+    router.addRoute("owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value} ${element("a", {href:"#", id:"debug"})`hi`}`} ${
             router.link("./subRouter")`haii`}`);
     router.addRoute("owo/owo/owo/owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value}`} ${
         router.link("./subRouter?test#test")`haii`}`);
