@@ -244,12 +244,12 @@ export class PageAttachedRouter extends Router{
      * ```
      * @param href the location to link to
      * @param attributes optional attributes to add to the link
-     * @param onClick optional click function to run when this link is clicked. If this function returns true, prevents redirection
      */
-    public link(href:string, attributes?:{[name:string]:any}, onClick?:(event:PointerEvent)=>boolean|undefined){
+    public link(href:string, attributes?:{[name:string]:any}){
         return htmlAcceptor(insides=>element("a", { ...(attributes ?? {}), href, "@click":(e:PointerEvent)=>{
+            if (e.ctrlKey || e.shiftKey || e.metaKey || e.button === 1) return;
+
             e.preventDefault();
-            if(onClick && onClick(e)) return;
             this.redirect(href);
         }})`${insides}`);
     }

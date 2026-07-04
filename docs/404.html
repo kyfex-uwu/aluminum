@@ -73,12 +73,13 @@
         {
             "imports":{
                 "@arrow-js/core": "https://esm.sh/@arrow-js/core@1.0.0-alpha.10",
-                "aluminum": "https://esm.sh/arrowjs-aluminum@2.1.0"
+                "aluminum": "https://esm.sh/arrowjs-aluminum@3.1.0",
+                "aluminum-dev": "/dist/index.js"
             }
         }
     </script>
     <script type="module">
-        import {PageAttachedRouter, createGenerator, Router} from "aluminum";
+        import {PageAttachedRouter, createGenerator, Router} from "aluminum-dev";
         import {html} from "@arrow-js/core";
 
         const runFromFile = window.location.host === "";
@@ -106,14 +107,15 @@
                 border-radius: 1.5rem;
                 box-shadow: inset 0 0 0.6rem #fff4, 0 0 1rem #0008;
                 line-height: 2rem;">
-            ${parentRouter.link.create("/aluminum/")`Introduction`}<br>
-            ${parentRouter.link.create("/aluminum/get-started")`Get Started`}<br><br>
-            ${parentRouter.link.create("/aluminum/ref")`ref`}<br>
-            ${parentRouter.link.create("/aluminum/computed")`computed`}<br>
-            ${parentRouter.link.create("/aluminum/create-generator")`createGenerator`}<br>
-            ${parentRouter.link.create("/aluminum/page-attached-router")`PageAttachedRouter`}<br>
-            ${parentRouter.link.create("/aluminum/router")`Router`}<br>
-            ${parentRouter.link.create("/aluminum/examples")`Examples`}<br>
+            ${parentRouter.link("/aluminum/")`Introduction`}<br>
+            ${parentRouter.link("/aluminum/get-started")`Get Started`}<br><br>
+            ${parentRouter.link("/aluminum/ref")`ref`}<br>
+            ${parentRouter.link("/aluminum/computed")`computed`}<br>
+            ${parentRouter.link("/aluminum/element")`element`}<br>
+            ${parentRouter.link("/aluminum/create-generator")`createGenerator`}<br>
+            ${parentRouter.link("/aluminum/page-attached-router")`PageAttachedRouter`}<br>
+            ${parentRouter.link("/aluminum/router")`Router`}<br>
+            ${parentRouter.link("/aluminum/examples")`Examples`}<br>
         </div></div>`;
 
         const router = new Router(()=>html`404`, (template)=>{
@@ -377,6 +379,26 @@
             </p>
 
         `)
+        .addRoute("element", ()=>html`
+            <p>
+                The ${code("computed")} function provides an easy way to create a computed value. To create a computed
+                value, call ${code("const yourComp = computed(() => yourExpression)")}. To access your computed value, access
+                ${code("yourComp.value")}. ${code("yourComp")} will update whenever ${code("() => yourExpression")}
+                evaluates to a new value.
+            </p>
+            <p>
+                Under the hood, ${code("const yourComp = computed(() => yourExpression)")} is functionally identical to:
+                ${multiCode(`
+                const computedHolder = ref();<br>
+                watch(() => computedHolder.value = (() => yourExpression)());
+                `)}<br>
+                where ${code("yourComp.value")} is ${code("computedHolder.value")}.
+            </p>
+            <p>
+                For simplicity, you can also call ${code(".$on()")} and
+                ${code(".$off()")} directly on ${code("yourComp")}, which functions the same as calling those methods
+                for the internal "value" property.
+            </p>`)
         .addRoute("split", ()=>html`
             <p>
                 Prior to ArrowJS version 1.0.0 (released March 18, 2026), ArrowJS was a solo project. However, it is now part
