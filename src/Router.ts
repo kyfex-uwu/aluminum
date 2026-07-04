@@ -1,5 +1,5 @@
 import {type ArrowTemplate, html} from "@arrow-js/core";
-import {htmlAcceptor, ref} from "./utils.js";
+import {element, htmlAcceptor, ref} from "./utils.js";
 
 const getRouteSymbol = Symbol("getRoute");
 const routerSymbol = Symbol("router");
@@ -243,11 +243,14 @@ export class PageAttachedRouter extends Router{
      * router.routerLink("example.com")`Link Label` // -> html`<a href="example.com">Link Label</a>`
      * ```
      * @param href the location to link to
+     * @param attributes optional attributes to add to the link
+     * @param onClick optional click function to run when this link is clicked. If this function returns true, prevents redirection
      */
-    public link(href:string){
-        return htmlAcceptor(insides=>html`<a href="${href}" @click="${(e:Event)=>{
+    public link(href:string, attributes?:{[name:string]:any}, onClick?:(event:PointerEvent)=>boolean|undefined){
+        return htmlAcceptor(insides=>element("a", { ...(attributes ?? {}), href, "@click":(e:PointerEvent)=>{
             e.preventDefault();
+            if(onClick && onClick(e)) return;
             this.redirect(href);
-        }}">${insides}</a>`);
+        }})`${insides}`);
     }
 }

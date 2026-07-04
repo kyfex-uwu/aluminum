@@ -53,7 +53,7 @@
     });
     // router.addRoute(":test", (vars) => html`testing :3 ${vars.test} * ${vars.test2} * ${vars.test3} ${Math.random()}`);
     router.addRoute("owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value} ${element("a", {href:"#", id:"debug"})`hi`}`} ${
-            router.link("./subRouter")`haii`}`);
+            router.link("./subRouter", {style:"color:red"})`haii`}`);
     router.addRoute("owo/owo/owo/owo", (vars) => html`testing :3 ${buttons.create(()=>console.log("owo"))`${()=>hehe.value}`} ${
         router.link("./subRouter?test#test")`haii`}`);
     router.addRoute("subRouter", (vars)=>html`:333333333333 `);
