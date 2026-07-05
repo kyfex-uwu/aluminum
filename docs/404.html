@@ -79,7 +79,7 @@
         }
     </script>
     <script type="module">
-        import {PageAttachedRouter, createGenerator, Router} from "aluminum-dev";
+        import {PageAttachedRouter, createGenerator, Router, htmlAcceptor, ref} from "aluminum-dev";
         import {html} from "@arrow-js/core";
 
         const runFromFile = window.location.host === "";
@@ -90,9 +90,9 @@
         const parentRouter = new PageAttachedRouter(document.getElementById("root"), ()=>html`no page :3`);
 
         const codeGenerator = createGenerator("span", {"class":"code"});
-        const multilineCodeGenerator = codeGenerator.extend({"class":(prev)=>prev+" multiline"}, (superT)=>superT, "div")
-        const code = inside => codeGenerator.create()`${inside}`;
-        const multiCode = inside => multilineCodeGenerator.create(null)`${inside}`;
+        const code = htmlAcceptor(inside => html`<span class="code">${inside}</span>`);
+        const multiCode = htmlAcceptor(inside => html`<div class="code multiline">${inside}</div>`);
+
         const tab = count => "&nbsp;&nbsp;".repeat(count);
 
         const sidebar = html`<div style="
@@ -109,12 +109,15 @@
                 line-height: 2rem;">
             ${parentRouter.link("/aluminum/")`Introduction`}<br>
             ${parentRouter.link("/aluminum/get-started")`Get Started`}<br><br>
+
             ${parentRouter.link("/aluminum/ref")`ref`}<br>
             ${parentRouter.link("/aluminum/computed")`computed`}<br>
-            ${parentRouter.link("/aluminum/element")`element`}<br>
-            ${parentRouter.link("/aluminum/create-generator")`createGenerator`}<br>
+            ${parentRouter.link("/aluminum/html-acceptor")`htmlAcceptor`}<br>
+            ${parentRouter.link("/aluminum/element")`element`}<br><br>
+
             ${parentRouter.link("/aluminum/page-attached-router")`PageAttachedRouter`}<br>
-            ${parentRouter.link("/aluminum/router")`Router`}<br>
+            ${parentRouter.link("/aluminum/router")`Router`}<br><br>
+
             ${parentRouter.link("/aluminum/examples")`Examples`}<br>
         </div></div>`;
 
@@ -126,7 +129,7 @@
                     <div style="display:flex">
                         <img src="./aluminum-min.webp" style="height: 4em; display: inline-block;">
                         <div style="flex:1"></div>
-                        ${parentRouter.link.create("https://github.com/kyfex-uwu/aluminum")`
+                        ${parentRouter.link("https://github.com/kyfex-uwu/aluminum")`
                             <svg width="2em" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
                                 <title>GitHub</title>
                                 <path fill="#ffffff" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z" transform="scale(64)"></path>
@@ -158,144 +161,67 @@
             </p>`)
             .addRoute("ref", ()=>html`
                 <p>
-                    The ${code("ref")} function provides an easy way to create a reactive value. To create a reactive
-                    value, call ${code("const yourRef = ref(yourValue)")}. To access your reactive value, access
-                    ${code("yourRef.value")}.
+                    The ${code`ref`} function provides an easy way to create a reactive value. To create a reactive
+                    value, call ${code`const yourRef = ref(yourValue)`}. To access your reactive value, access
+                    ${code`yourRef.value`}.
                 </p>
                 <p>
-                    Under the hood, ${code("const yourRef = ref(yourValue)")} is functionally identical to
-                    ${code("reactive({value:yourValue)})")}.
+                    Under the hood, ${code`const yourRef = ref(yourValue)`} is functionally identical to
+                    ${code`reactive({value:yourValue)})`}.
                 </p>
                 <p>
-                    For simplicity, you can also call ${code(".$on()")} and
-                    ${code(".$off()")} directly on ${code("yourRef")}, which functions the same as calling those methods
-                    for the internal "value" property.
+                    To "listen" to the reactive value, you can call ${code`yourRef.$on(listener)`} and
+                    ${code`yourRef.$off(listener)`}, where ${code`listener`} is a function that takes in 2 parameters
+                    (the old value and the new value) and is called every time the ${code`yourRef`} changes.
                 </p>`)
             .addRoute("computed", ()=>html`
                 <p>
-                    The ${code("computed")} function provides an easy way to create a computed value. To create a computed
-                    value, call ${code("const yourComp = computed(() => yourExpression)")}. To access your computed value, access
-                    ${code("yourComp.value")}. ${code("yourComp")} will update whenever ${code("() => yourExpression")}
+                    The ${code`computed`} function provides an easy way to create a computed value. To create a computed
+                    value, call ${code`const yourComp = computed(() => yourExpression)`}. To access your computed value, access
+                    ${code`yourComp.value`}. ${code`yourComp`} will update whenever ${code`() => yourExpression`}
                     evaluates to a new value.
                 </p>
                 <p>
-                    Under the hood, ${code("const yourComp = computed(() => yourExpression)")} is functionally identical to:
-                    ${multiCode(`
-                    const computedHolder = ref();<br>
-                    watch(() => computedHolder.value = (() => yourExpression)());
-                    `)}<br>
-                    where ${code("yourComp.value")} is ${code("computedHolder.value")}.
+                    Under the hood, ${code`const yourComp = computed(() => yourExpression)`} is functionally identical to:
+                    ${multiCode`
+                        const computedHolder = ref();<br>
+                        watch(() => <br>
+                        ${tab(1)}computedHolder.value = yourExpression );
+                    `}<br>
+                    where ${code`yourComp.value`} is ${code`computedHolder.value`}.
                 </p>
                 <p>
-                    For simplicity, you can also call ${code(".$on()")} and
-                    ${code(".$off()")} directly on ${code("yourComp")}, which functions the same as calling those methods
-                    for the internal "value" property.
+                    To "listen" to the computed value, you can call ${code`yourComp.$on(listener)`} and
+                    ${code`yourComp.$off(listener)`}, where ${code`listener`} is a function that takes in 2 parameters
+                    (the old value and the new value) and is called every time the ${code`yourComp`} changes.
                 </p>`)
         .addRoute("page-attached-router", ()=>html`
             <p>
-                The ${code("PageAttachedRouter")} is exactly what you'd expect when you think of a web router: it renders
+                The ${code`PageAttachedRouter`} is exactly what you'd expect when you think of a web router; it renders
                 some page depending on the current URL. In addition to all the capabilities of the Router, it can force a
-                page rerender via the ${code("rerender")} function and it can redirect to a new page without reloading the
-                site via the ${code("redirect")} function.
+                page rerender via the ${code`rerender`} function and it can redirect to a new page without reloading the
+                site via the ${code`redirect`} function.
             </p>
             <p>
-                To use the ${code("PageAttachedRouter")}, create your router, add your routes, and then call
-                ${code(".redirect()")}.
+                To use the ${code`PageAttachedRouter`}, create your router, add your routes, and then call
+                ${code`.redirect()`}.
             </p>
             <p>
-                The ${code("rerender")} function is very simple; it only rerenders the current page.
-                ${multiCode("router.rerender(); // returns itself, for chaining")}
+                The ${code`rerender`} function is very simple; it only rerenders the current page.
+                ${multiCode`router.rerender(); // returns itself, for chaining`}
             </p>
             <p>
-                The ${code("redirect")} function redirects to the given path and rerenders the page. If ${code("replace")} is true,
+                The ${code`redirect`} function redirects to the given path and rerenders the page. If ${code`replace`} is true,
                 the new path will replace the previous one; this means in the history, the previous page will have never
                 existed. (The back button won't function like you think it will, it'll skip the previous page and go to the
                 one before it.)
-                ${multiCode(`router.redirect(<br>
+                ${multiCode`router.redirect(<br>
                     ${tab(1)}newLocation:string = window.location.pathname,<br>
-                    ${tab(1)}replace?:boolean); // returns itself, for chaining`)}
+                    ${tab(1)}replace?:boolean); // returns itself, for chaining`}
             </p>
             <p>
-                To learn the rest of the capabilities of the ${code("PageAttachedRouter")}, visit the
-                ${parentRouter.link.create("./router")`Router`} page as well.
-            </p>`)
-        .addRoute("create-generator", ()=>html`
-            <p>
-                Most web libraries follow a component paradigm. Aluminum provides components in a slightly
-                unconventional way: you create a component generator and then use that as an ArrowJS template.
-            </p>
-            <p>
-                To create a generator, call ${code("createGenerator(elementType, attributes, transformFunction)")}
-                where ${code("elementType")} is the type of element you want to generate (think ${code("\"span\"")} or
-                ${code("\"div\"")}), ${code("attributes")} is an object of values to be set as attributes on the generated
-                element, and ${code("transformFunction")} is an optional function that takes a user parameter (${code("userArgs")}) and the
-                element's attributes (${code("currentAttributes")}), and modifies the element's attributes.
-            </p>
-            <p>
-                Some examples:
-                ${multiCode(`
-                    // userArgs is of the form { href: string (a link) }<br><br>
-
-                    const linkGen = createGenerator("a", { style: "background-color: red;" },<br>
-                    ${tab(1)}(userArgs, currentAttributes) => {<br><br>
-
-                        ${tab(2)}currentAttributes.href = userArgs.href;<br>
-                        ${tab(2)}// this sets the "href" attribute on the generated "a" element<br>
-                    });
-                `)}
-                ${multiCode(`
-                    // userArgs is of the form { title: string, contents: html template }<br><br>
-
-                    const openModalGen = createGenerator("button", { class: "modal-class" },<br>
-                    ${tab(1)}(userArgs, currentAttributes) => {<br><br>
-
-                        ${tab(2)}currentAttributes["@click"] = () =><br>
-                            ${tab(3)}customOpenModal(userArgs.title, userArgs.contents);<br>
-                        ${tab(2)}// this sets the "click" event on the generated "button" element<br>
-                    });
-                `)}
-            </p>
-            <p>
-                To use a generator, call ${code("generator.create()")}. If the generator requires a specific argument (${code("userArgs")}),
-                you'll have to pass that in as well. For example, the ${parentRouter.link.create("page-attached-router")`Page Attached Router`}'s
-                ${code("link")} generator requires that the argument be the href of the link. You'd use it like this:
-                ${code("router.link.create(\"/some/link\")")}
-            </p>
-            <p>
-                However, calling ${code(".create()")} is only half of the generator: that returns a function that, similar
-                to ${code("html")}, is used by appending a template string onto the end of it. Continuing with the router
-                link example, you'd use it like this: ${code("router.link.create(\"/some/link\")`Some Link`")}
-            </p>
-            <p>
-                To extend a generator, call ${code("generator.extend(attributes, newTransform, newType)")} where:
-                <ul>
-                <li>${code("attributes")} is an object of callbacks with each callback taking in the old attribute
-                    and returning the new attribute, </li>
-                <li>${code("newTransform")} is an function that takes in the old transform function and returns a new
-                    transform function (if left unspecified, it inherits the old transform function), and</li>
-                <li>${code("newType")} is an optional string for the new type of element this generator should generate.
-                    If left unspecified, it inherits the old element type.</li>
-                </ul>
-            </p>
-            <p>
-                Some examples:
-                ${multiCode(`
-                    //Extends the router.link generator into a new generator with links that don't look link-y<br>
-                    //Doesn't change the transform function<br><br>
-                    router.link.extend({<br>
-                    ${tab(1)}class: (oldClass) => oldClass + " camoLink"<br>
-                    });
-                `)}
-                ${multiCode(`
-                    //Extends some generator and adds a functionality where<br>
-                    //clicking it logs some data to the console<br><br>
-                    someGenerator.extend({}, (oldTransform) => {<br>
-                    ${tab(1)}return (userArgs, currentAttributes) => {<br>
-                        ${tab(2)}oldTransform();<br>
-                        ${tab(2)}currentAttributes["@click"] = () => console.log(userArgs);<br>
-                    ${tab(1)}};<br>
-                    });
-                `)}
+                To learn the rest of the capabilities of the ${code`PageAttachedRouter`}, visit the
+                ${parentRouter.link("./router")`Router`} page as well.
             </p>`)
         .addRoute("get-started", ()=>html`
             <p>
@@ -304,100 +230,116 @@
             </p>
             <p>
                 Using a package manager:<br>
-                ${multiCode(html`
+                ${multiCode`
                 npm install arrowjs-aluminum<br>
                 ${tab(1)}or<br>
                 yarn add arrowjs-aluminum
-                `)}
+                `}
             </p>
             <p>
                 This will automatically download/depend on ArrowJS as well, so you don't need to download it separately.
             </p>
             <p>
                 From a CDN:<br>
-                ${multiCode(html`
+                ${multiCode`
                     &lt;script type="module"><br>
                     ${tab(1)}import { ... } from 'https://esm.sh/arrowjs-aluminum';<br>
                     ${tab(1)}import { ... } from 'https://esm.sh/@arrow-js/core@1.0.0-alpha.10';<br>
-                    ${tab(1)}//this ArrowJS version is important! ${parentRouter.link.create("split")`(see why)`}<br><br>
+                    ${tab(1)}//this ArrowJS version is important! ${parentRouter.link("split")`(see why)`}<br><br>
                     ${tab(1)}// code goes here<br>
                     &lt;/script>
-                `)}
+                `}
             </p>
             <p>
                 If you want to use a router, the setup is simple. Create a PageAttachedRouter, add your routes, and then
-                call ${code("router.redirect()")}.
-                ${multiCode(`
+                call ${code`router.redirect()`}.
+                ${multiCode`
                 const router = new PageAttachedRouter(document.getElementById("root")).<br>
                 ${tab(1)}.addRoute("routeOne", (variables) => html\`route one\`)<br>
                 ${tab(1)}.addRoute("routeTwo/:param", (variables) => html\`route two: \${variables.param}\`)<br>
                 ${tab(1)}.redirect();
-                `)}
+                `}
             </p>
             <p>
                 If you're using a router, it's recommended to use a router link instead of the &lt;a> tag. To do that,
-                create a link from the ${code("router.link")} generator and use it in your template.
-                ${multiCode(`html\`some content, and then a link --> \${<br>
-                    ${tab(1)}router.link.create("your/path")\`your link content\`<br>
-                }\``)}
+                create a link wwith the ${code`router.link`} generator and use it in your template.
+                ${multiCode`html\`some content, and then a link --> \${<br>
+                    ${tab(1)}router.link("your/path")\`your link content\` }\``}
             </p>
             `)
         .addRoute("router", ()=>html`
             <p>
                 If you want a router that renders to the web page, read
-                ${parentRouter.link.create("./page-attached-router")`Page Attached Router`} first.
+                ${parentRouter.link("./page-attached-router")`Page Attached Router`} first.
             </p>
             <p>
                 A Router in Aluminum is simply a grouping of routes. It has a couple capabilities beyond that: a 404 page and
                 a transform function that can change how your route looks before rendering it.
             </p>
             <p>
-                To create a router, call ${code("new Router(route404, transformFunc)")} where ${code("route404")} is
-                an ArrowJS template that will show for your 404 screen, and ${code("transformFunc")} is an optional
-                function that takes in the route template and the route variables, and returns a new template to render.
+                To create a router, call ${code`new Router(route404, transformFunc)`} where ${code`route404`} is
+                an ArrowJS template that will show for your 404 screen, and ${code`transformFunc`} is an optional
+                function that takes in the route template, the route variables, and the route state and returns a new template to render.
             </p>
             <p>
-                Example: ${code(`new Router(html\`404\`, (template) => html\`< \${template} >\``)}
+                Example: ${code`new Router(html\`404\`, (template, variables, state) => html\`< \${template} >\``}
             </p>
-                To add routes to your router, call ${code("router.addRoute(routePath, route)")}.
+                To add routes to your router, call ${code`router.addRoute(routePath, route)`}.
             <ul>
                 <li>
-                    ${code("routePath")} should not start with a slash, and can contain variables. To specify a variable,
+                    ${code`routePath`} should not start with a slash, and can contain variables. To specify a variable,
                     start the path section with a colon and then add an identifier. The route function will be able to access
-                    this variable when it renders. An example route could be ${code("router.addRoute(\"path/with/:variable\", ...)")}
+                    this variable when it renders. An example route could be ${code`router.addRoute(\"path/with/:variable\` ...)`},
+                    and the resulting route could access ${code`variables.route`} (it'll be set to whatever part of the
+                    route is at the ${code`:variable`} section.)
                 </li>
                 <li>
-                    ${code("route")} can be either a function that returns an ArrowJS template or another router. If
-                    ${code("route")} is a function, it should take in an object of strings. This object will contain
-                    all (if any) of the variables in this path, and the template returned from this function can use those accordingly.
+                    ${code`route`} can be either a function that returns an ArrowJS template or another router. If
+                    ${code`route`} is a function, it should take in two objects of strings. The first object will contain
+                    all (if any) of the variables in this path, the second object will contain all of the state data
+                    set by any subpaths, and the template returned from this function can use those accordingly. If you
+                    want to pass any state up to any superpaths, you should modify the second state object.
                 </li>
             </ul>
             <p>
-                Example: ${multiCode(`router.addRoute("some/route/:custom", (variables) => {<br>
-                ${tab(1)}return html\`Page content &lt;br> \${variables.custom}\`;<br>
-                }`)}
+                Example: ${multiCode`router.addRoute("some/route/:custom", (variables, state) => {<br>
+                ${tab(1)}state.visitedSomeRoute = true;<br>
+                ${tab(1)}return html\`Page content &lt;br> \${variables.custom} \${state.isDarkMode}\`;<br>
+                })`}
             </p>
 
         `)
-        .addRoute("element", ()=>html`
+        .addRoute("html-acceptor", ()=>html`
             <p>
-                The ${code("computed")} function provides an easy way to create a computed value. To create a computed
-                value, call ${code("const yourComp = computed(() => yourExpression)")}. To access your computed value, access
-                ${code("yourComp.value")}. ${code("yourComp")} will update whenever ${code("() => yourExpression")}
-                evaluates to a new value.
+                The ${code`htmlAcceptor`} function is Aluminum's version of components. ${code`htmlAcceptor`} is a
+                function that takes in a transform function. This function is called whenever you use the return value
+                like a ${code`html`} template, for example: ${code`htmlAcceptor( ... )\`some html stuff \${Math.random()}\``}
             </p>
             <p>
-                Under the hood, ${code("const yourComp = computed(() => yourExpression)")} is functionally identical to:
-                ${multiCode(`
-                const computedHolder = ref();<br>
-                watch(() => computedHolder.value = (() => yourExpression)());
-                `)}<br>
-                where ${code("yourComp.value")} is ${code("computedHolder.value")}.
+                When using ${code`htmlAcceptor`}, returning another ${code`html`} template can make it act like a component.
+                For example: ${code`htmlAcceptor( inside => html\`&lt;div class="red"&gt;\${inside}&lt;/div&gt;\` )`} when used will
+                create a ${code`div`} with some contents inside, determined by the fragment after the ${code`htmlAcceptor( ... )`}
             </p>
             <p>
-                For simplicity, you can also call ${code(".$on()")} and
-                ${code(".$off()")} directly on ${code("yourComp")}, which functions the same as calling those methods
-                for the internal "value" property.
+                EX:<br>
+                ${multiCode`
+                const infoBar = (color) => htmlAcceptor( inside =><br>
+                ${tab(1)}html\`&lt;div class="info-bar" style="\${ "color:" + color }"&gt;INFO: \${inside}&lt;/div&gt;\`)<br><br>
+                infoBar("red")\`red info text!\`<br>
+                //^^ this is equivalent to vv<br>
+                html\`&lt;div class="info-bar" style="color:red"&gt;INFO: red info text!&lt;/div&gt;\`
+                `}
+            </p>`)
+        .addRoute("element",()=>html`
+            <p>
+                The ${code`element`} function is another, more customizable way to create a single HTML element. To use,
+                pass in the element type as a string ("div", "span", or "a" for example) and any attributes you want on
+                the element as an object where the keys are the attribute names, and the values are the attribute values.
+            </p>
+            <p>
+                This in an ${code`${parentRouter.link("/html-acceptor")`htmlAcceptor`}`} component, in that once you call the
+                function you use it just like an ${code`html`} template. For example:
+                ${code`element("div", {class:"attributeValue"})\`contents\``}
             </p>`)
         .addRoute("split", ()=>html`
             <p>

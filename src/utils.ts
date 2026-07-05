@@ -78,7 +78,7 @@ export class Computed<T>{
 
 type PseudoTemplate<T> = (strings:TemplateStringsArray, ...expSlots: any[]) => T
 /**
- * Returns a premade html template that triggers a callback when used.
+ * Returns a premade html template that runs a transform function when used.
  *
  * EX:
  * ```ts
@@ -91,11 +91,11 @@ type PseudoTemplate<T> = (strings:TemplateStringsArray, ...expSlots: any[]) => T
  * // ^ produces this v
  * html`<a href="example.com">Example link</a>`
  * ```
- * @param callback a function that accepts an html template and transforms it
+ * @param transform a function that accepts an html template and transforms it
  */
-export function htmlAcceptor<T>(callback:((html:ArrowTemplate)=>T)):PseudoTemplate<T>{
+export function htmlAcceptor<T>(transform:((html:ArrowTemplate)=>T)):PseudoTemplate<T>{
     return (strings:TemplateStringsArray, ...expSlots: any[])=>{
-        return callback(html(strings, ...expSlots));
+        return transform(html(strings, ...expSlots));
     }
 }
 
