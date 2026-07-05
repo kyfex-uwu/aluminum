@@ -6,7 +6,6 @@
     <title>Aluminum</title>
     <link rel="icon" type="image/x-icon" href="https://kyfex-uwu.github.io/aluminum/favicon.ico">
 
-
     <!-- Open Graph Protocol metadata -->
     <meta property="og:title" content="Aluminum">
     <meta property="og:description" content="Reactivity without the framework... with the framework">
@@ -73,13 +72,12 @@
         {
             "imports":{
                 "@arrow-js/core": "https://esm.sh/@arrow-js/core@1.0.0-alpha.10",
-                "aluminum": "https://esm.sh/arrowjs-aluminum@3.1.0",
-                "aluminum-dev": "/dist/index.js"
+                "aluminum": "https://esm.sh/arrowjs-aluminum@3.1.1"
             }
         }
     </script>
     <script type="module">
-        import {PageAttachedRouter, createGenerator, Router, htmlAcceptor, ref} from "aluminum-dev";
+        import {PageAttachedRouter, Router, htmlAcceptor} from "aluminum";
         import {html} from "@arrow-js/core";
 
         const runFromFile = window.location.host === "";
@@ -89,7 +87,6 @@
 
         const parentRouter = new PageAttachedRouter(document.getElementById("root"), ()=>html`no page :3`);
 
-        const codeGenerator = createGenerator("span", {"class":"code"});
         const code = htmlAcceptor(inside => html`<span class="code">${inside}</span>`);
         const multiCode = htmlAcceptor(inside => html`<div class="code multiline">${inside}</div>`);
 
